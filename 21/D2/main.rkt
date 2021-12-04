@@ -2,7 +2,7 @@
 
 (define parse 
   (map 
-    (lambda (s) 
+    (λ (s) 
       (match-let ([(list x y) (string-split s)]) 
         (cons x (string->number y)))) 
     (file->lines "input")))
