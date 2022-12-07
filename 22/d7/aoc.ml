@@ -23,17 +23,15 @@ let up = function
   | (Top, _) -> failwith "Cannot move up"
   | (DirCtx (name, files, ctx), file) -> (ctx, Dir (name, file :: files))
 
+let file_name fs = match fs with
+  | File (name, _) -> name
+  | Dir (name, _) -> name
+
 let find_file (files : filesystem list) (name : string) : filesystem option =
-  let aux = function
-    | Dir (dir_name, _) -> String.compare name dir_name = 0
-    | File (file_name, _) -> String.compare name file_name = 0 
-  in List.find files aux
+  List.find files (fun file -> String.compare name (file_name file) = 0)
 
 let remove_file files name =
-  let aux = function
-    | Dir (dir_name, _) -> String.compare name dir_name <> 0
-    | File (file_name, _) -> String.compare name file_name <> 0
-  in List.filter files aux
+  List.filter files (fun file -> String.compare name (file_name file) <> 0)
 
 let down (ctx, file) name : loc =
   match file with
@@ -43,21 +41,13 @@ let down (ctx, file) name : loc =
      | Some file -> (DirCtx (dir_name, remove_file files name, ctx), file)
      | None -> failwith "Trying to move to a non-existent directory"
 
-let create_file (ctx, file) name size =
-  match file with
+let create_file (ctx, fs) file =
+  match fs with
   | File _ -> failwith "You have to be in a directory to add a file"
   | Dir (dir_name, files) ->
-     match find_file files name with
+     match find_file files (file_name file) with
      | Some _ -> (ctx, file)
-     | None -> (ctx, Dir (dir_name, File (name, size) :: files))
-
-let create_dir (ctx, fs) name =
-  match fs with
-  | File _ -> failwith "You have to be in a directory to create a directory"
-  | Dir (dir_name, files) ->
-     match find_file files name with
-     | Some _ -> (ctx, fs)
-     | None -> (ctx, Dir (dir_name, Dir (name, []) :: files))
+     | None -> (ctx, Dir (dir_name, file :: files))
 
 let rec root (ctx, fs) : loc =
   match ctx with
@@ -76,8 +66,8 @@ let interpret_command fs command =
   | Root -> root fs
   | Up -> up fs
   | Down name -> down fs name
-  | CreateDir name -> create_dir fs name 
-  | CreateFile (name, size) -> create_file fs name size
+  | CreateDir name -> create_file fs (Dir (name, [])) 
+  | CreateFile (name, size) -> create_file fs (File (name, size))
 
 let interpret_commands fs commands =
   List.fold commands ~init:fs ~f:interpret_command 
@@ -117,9 +107,11 @@ let input =
   |> (fun x ->  List.(>>=) x f)
   |> interpret_commands (Top, Dir ("/", []))
 
+let sum_list l = Option.fold (List.reduce l ~f:(+)) ~init:0 ~f:(fun _ x -> x)
+
 let file_size fs : int =
   let file_case _ size = size in
-  let dir_case _ sizes = Option.fold (List.reduce sizes ~f:(+)) ~init:0 ~f:(fun _  x -> x) in
+  let dir_case _ sizes = sum_list sizes in
   fs_fold fs ~file_case ~dir_case
 
 let list_min l =
@@ -127,8 +119,6 @@ let list_min l =
     | Some y -> if x < y then Some x else Some y
     | None -> Some x
   in List.fold l ~init:None ~f:aux
-
-let sum_list l = Option.fold (List.reduce l ~f:(+)) ~init:0 ~f:(fun _ x -> x)
 
 let one fs =
   let file_case _ size = (0, size) in
@@ -164,9 +154,6 @@ let two fs size_limit =
   in fst (fs_fold fs ~file_case ~dir_case)
 
 let fs = snd (root input)
-
-
 let free_space = 70000000 - file_size fs
 let size = 30000000 - free_space
-
 let () = printf "one: %d, two: %d\n" (one fs) (Option.value_exn (two fs size))
