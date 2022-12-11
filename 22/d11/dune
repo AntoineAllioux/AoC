@@ -1,0 +1,7 @@
+(executable
+  (name aoc)
+  (libraries base stdio angstrom))
+
+(env
+  (dev
+    (flags (:standard -warn-error -A))))
