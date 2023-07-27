@@ -5,8 +5,9 @@
 
 module InductiveGraph where
 
+import Control.Monad (foldM)
+import Control.Monad.State.Lazy
 import Data.List (head, nub, null)
-import System.Posix.Internals (newFilePath)
 
 type Node = Int
 
@@ -27,7 +28,7 @@ class Graph g where
 
 data GraphView a b g = Nil | Cons (Ctx a b) (g a b)
 
-data Tree a b = Lf | Nd Node a [(b, Tree a b)]
+data Tree a = Lf | Nd Node a [Tree a]
   deriving (Show)
 
 {-
@@ -94,25 +95,58 @@ bfs (n : ns) g@(match n -> (Just ctx, gr)) =
   n : bfs (ns ++ suc ctx) gr
 
 -- Bad performance
-postorder :: Tree a b -> [a]
+postorder :: Tree a -> [Node]
 postorder Lf = []
-postorder (Nd _ x c) = concatMap (postorder . snd) c ++ [x]
+postorder (Nd n _ c) = concatMap postorder c ++ [n]
 
-df :: (Graph g) => [Node] -> g a b -> ([Tree a b], g a b)
-df l g | null l || isEmpty g = ([], g)
-df (n : ns) g@(match n -> (Nothing, _)) = df ns g
-df (n : ns) g@(match n -> (Just ctx@(p, _, x, s), gr)) =
-  let -- (tr, g2) = df (suc ctx ++ ns) gr
-      (yo, gr2) =
-        foldl
-          ( \(l, grr) (b, m) ->
-              let yoo = df [m] grr
-               in (l ++ fmap (\x -> (b, x)) (fst yoo), snd yoo)
-          )
-          ([], gr)
-          s
-      (ns', gr3) = df ns gr2
-   in ((Nd n x yo) : ns', gr3)
+preorder :: Tree a -> [Node]
+preorder Lf = []
+preorder (Nd n _ c) = n : concatMap preorder c
+
+nodes :: Graph g => g a b -> [Node]
+nodes (matchAny -> (Nothing, _)) = []
+nodes (matchAny -> (Just (_, n, _, _), g)) = n : nodes g
+
+df :: (Graph g) => [Node] -> g a b -> [Tree a]
+df n g = fst (aux n g)
+  where
+    aux :: (Graph g) => [Node] -> g a b -> ([Tree a], g a b)
+    aux l g | null l || isEmpty g = ([], g)
+    aux (n : ns) g@(match n -> (Nothing, _)) = aux ns g
+    aux (n : ns) (match n -> (Just ctx@(_, _, x, _), g)) =
+      let (ns', g1) = aux (suc ctx) g
+          (ts, g2) = aux ns g1
+       in (Nd n x ns' : ts, g2)
+
+topsort :: Graph g => g a b -> [Node]
+topsort g = concatMap preorder (df (nodes g) g)
+
+df2 :: Graph g => [Node] -> g a b -> [Tree a]
+df2 n = evalState (aux n) 
+  where 
+    aux :: (Graph g) => [Node] -> State (g a b) [Tree a]
+    aux [] = return []
+    aux (n : ns) = do
+      g <- get
+      case match n g of
+        (Nothing, _) -> aux ns
+        (Just ctx@(_, _, x, _), g1) -> do
+          _ <- put g1
+          ns' <- aux (suc ctx)
+          ts <- aux ns
+          return ((Nd n x ns') : ts)
+
+
+bf :: (Graph g) => [Node] -> g a b -> [Tree a]
+bf n g = fst (aux n g)
+  where
+    aux :: (Graph g) => [Node] -> g a b -> ([Tree a], g a b)
+    aux l g | null l || isEmpty g = ([], g)
+    aux (n : ns) g@(match n -> (Nothing, _)) = aux ns g
+    aux (n : ns) (match n -> (Just ctx@(_, _, x, _), g)) =
+      let (ts, g1) = aux ns g
+          (ns', g2) = aux (suc ctx) g1
+       in (Nd n x ns' : ts, g2)
 
 {-
 nodes :: Graph a b -> [Node]

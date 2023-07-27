@@ -3,6 +3,7 @@ module Main where
 import Data.IntMap.Lazy as IntMap ()
 import GraphRep (Gr)
 import InductiveGraph
+import Control.Monad.State (evalState)
 
 main :: IO ()
 main =
@@ -10,10 +11,10 @@ main =
     handle <- readFile "input"
     let map =
           ([("g", 5)], 6, "f", [])
-            & ([("e", 2)], 5, "e", [("f", 3)])
+            & ([("e", 2)], 5, "e", []) -- [("f", 3)])
             & ([("d", 2)], 4, "d", [])
-            & ([("b", 1)], 3, "c", [("c", 2)])
-            & ([("a", 1), ("a", 1)], 2, "b", [])
+            & ([("c", 3), ("a", 1), ("a", 1)], 2, "b", [])
+            & ([("b", 1)], 3, "c", [])
             & ([], 1, "a", [])
             & empty ::
             Gr String String
@@ -21,6 +22,9 @@ main =
     putStrLn (show (dfs [1] map))
     putStrLn (show (bfs [1] map))
     putStrLn (show (df [1] map))
+    putStrLn (show (df2 [1] map))
+    putStrLn (show (bf [1] map))
+    putStrLn (show (topsort map))
 
 -- putStrLn (show (prune g 1))
 -- putStrLn (show (prune2 g 1))
