@@ -1,0 +1,9 @@
+(executable
+  (name aoc)
+  (libraries base stdio))
+
+(env
+  (dev
+    (flags (:standard -warn-error -A))))
+
+(include_subdirs unqualified)
