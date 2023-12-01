@@ -3,9 +3,7 @@
 (require rackjure/threading)
 (require compose-app)
 (require megaparsack megaparsack/text)
-(require data/applicative
-         (rename-in data/functor (map fmap))
-         data/monad)
+(require (rename-in data/functor (map fmap)))
 
 (define input
   (file->lines "input"))
@@ -13,16 +11,17 @@
 (define (try-string/p s)
   (try/p (string/p s)))
 
+
 (define text-digit/p
-  (or/p (chain (const (pure 1)) (try-string/p "one"))
-        (chain (const (pure 2)) (try-string/p "two"))
-        (chain (const (pure 3)) (try-string/p "three"))
-        (chain (const (pure 4)) (try-string/p "four"))
-        (chain (const (pure 5)) (try-string/p "five"))
-        (chain (const (pure 6)) (try-string/p "six"))
-        (chain (const (pure 7)) (try-string/p "seven"))
-        (chain (const (pure 8)) (try-string/p "eight"))
-        (chain (const (pure 9)) (try-string/p "nine"))))
+  (or/p (fmap (const 1) (try-string/p "one"))
+        (fmap (const 2) (try-string/p "two"))
+        (fmap (const 3) (try-string/p "three"))
+        (fmap (const 4) (try-string/p "four"))
+        (fmap (const 5) (try-string/p "five"))
+        (fmap (const 6) (try-string/p "six"))
+        (fmap (const 7) (try-string/p "seven"))
+        (fmap (const 8) (try-string/p "eight"))
+        (fmap (const 9) (try-string/p "nine"))))
 
 (define parser/p
   (fmap (curry filter (not .. false?) .. flatten)
@@ -31,8 +30,8 @@
           (lookahead/p
            (or/p text-digit/p
                  (fmap (string->number .. string) digit/p)
-                 (chain (const (pure #f)) any-char/p)))
-          (chain (const (pure #f)) any-char/p)))))
+                 (fmap (const #f) any-char/p)))
+          (fmap (const #f) any-char/p)))))
 
 (define (sum l)
   (foldl + 0 l))
