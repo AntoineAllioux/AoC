@@ -10,7 +10,7 @@
 (struct game (id sets) #:transparent)
 
 (define (get-set-colour set colour)
-  (hash-ref set colour (λ () 0)))
+  (hash-ref set colour (const 0)))
 
 (define alpha-string/p
   (fmap list->string (many/p letter/p)))
@@ -52,7 +52,7 @@
             (foldl (λ (set acc) (and acc (set-valid? set))) #t (game-sets game)))])
     (~>> games
          (filter game-valid?)
-         (map (λ (game) (game-id game)))
+         (map game-id)
          sum)))
 
 (define part2
