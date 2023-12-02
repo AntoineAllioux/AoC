@@ -24,13 +24,13 @@
 
 (define sets/p
   (do [assoc <- (many/p set/p #:sep (char/p #\,))]
-    (pure (make-hash assoc))))
+      (pure (make-hash assoc))))
 
 (define game/p
   (do [_ <- (string/p "Game ")]
       [id <- integer/p]
       [_ <- (char/p #\:)]
-      [sets <- (many/p sets/p #:sep (char/p #\;)) ]
+      [sets <- (many/p sets/p #:sep (char/p #\;))]
       (pure (game id sets))))
 
 (define games
