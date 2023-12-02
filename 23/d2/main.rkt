@@ -17,10 +17,10 @@
 
 (define set/p
   (do [_ <- (char/p #\space)]
-    [n <- integer/p]
-    [_ <- (char/p #\space)]
-    [c <- (fmap string->symbol alpha-string/p)]
-    (pure (cons c n))))
+      [n <- integer/p]
+      [_ <- (char/p #\space)]
+      [c <- (fmap string->symbol alpha-string/p)]
+      (pure (cons c n))))
 
 (define sets/p
   (do [assoc <- (many/p set/p #:sep (char/p #\,))]
