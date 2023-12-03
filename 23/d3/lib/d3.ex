@@ -11,11 +11,11 @@ defmodule D3 do
   end
 
   def is_digit(c) do
-    c >= 48 and c <= 57
+    c >= ?0 and c <= ?9
   end
   
   def is_symbol(c) do
-    not is_digit(c) and c != 46
+    not is_digit(c) and c != ?.
   end
 
   def height(schema) do
@@ -86,7 +86,7 @@ defmodule D3 do
             if is_digit(schema[i][j]) do
               {:reading_sure, tmp ++ [schema[i][j]], acc}
             else
-              {:searching, [],  [tmp | acc]}
+              {:searching, [], [tmp | acc]}
             end
           :reading_not_sure ->
             if is_digit(schema[i][j]) do
