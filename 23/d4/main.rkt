@@ -38,10 +38,8 @@
      (filter (λ (x) (member x winning)) numbers)]))
 
 (define (score c)
-  (match c
-    [(card _ winning numbers)
-     (let ([won-cards (winning-cards c)])
-       (if (null? won-cards) 0 (expt 2 (sub1 (length won-cards)))))]))
+  (let ([won-cards (winning-cards c)])
+    (if (null? won-cards) 0 (expt 2 (sub1 (length won-cards))))))
 
 (define part1
   (~>> cards
@@ -51,20 +49,16 @@
 (define (cards-count cards)
   (let ([total
          (make-immutable-hash
-          (map (match-lambda [(card id winning numbers) (cons id 1)])
-               cards))]
+          (map (λ (c) (cons (card-id c) 1)) cards))]
         [aux
          (λ (c acc)
-           (match c
-             [(card id winning numbers)
-              (let ([n (hash-ref acc id)]
-                    [won-cards (length (winning-cards c))])
-                (if
-                 (> won-cards 0)
+           (let ([n (hash-ref acc (card-id c))]
+                 [won-cards (length (winning-cards c))])
+             (if (> won-cards 0)
                  (foldl (λ (id acc) (hash-update acc id (λ (x) (+ x n))))
                         acc
-                        (range (add1 id) (+ (add1 id) won-cards)))
-                 acc))]))])
+                        (range (add1 (card-id c)) (+ (add1 (card-id c)) won-cards)))
+                 acc)))])
     (foldl aux total cards)))
 
 (define part2
