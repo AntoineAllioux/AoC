@@ -4,35 +4,6 @@ open Base
 open Container.Continue_or_stop
 open Fn
 
-module Category = struct
-  module T = struct
-    type t =
-      Seed
-    | Soil
-    | Fertilizer
-    | Water
-    | Light
-    | Temperature
-    | Humidity
-    | Location
-  [@@deriving compare, sexp_of]
-  end
-  include T
-  include Comparator.Make(T)
-end
-
-open Category
-
-let str_to_cat = function
-  | "seed" -> Seed
-  | "soil" -> Soil
-  | "fertilizer" -> Fertilizer
-  | "water" -> Water
-  | "light" -> Light
-  | "temperature" -> Temperature
-  | "humidity" -> Humidity
-  | "location" -> Location
- 
 let integer =
   take_while1 (function '0' .. '9' -> true | _ -> false) >>| Int.of_string
 
@@ -53,7 +24,7 @@ let parse_map_header =
   let* _ = take 4 in
   let* dest = alpha in
   let* _ = take 5 in 
-  return (str_to_cat src, str_to_cat dest)
+  return (src, dest)
 
 let triple =
   let open Angstrom.Let_syntax in
@@ -109,7 +80,6 @@ let parse2 =
   let* _ = end_of_line in
   let* maps = sep_by end_of_line parse_map in
   return (seeds, maps)
-
 
 let part2 input =
   let Ok ((seeds, maps)) = parse_string ~consume:Consume.All parse2 input in
