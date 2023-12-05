@@ -55,7 +55,7 @@ let part1 input =
   let Ok ((seeds, maps)) = parse_string ~consume:Consume.All parse input in
   let get_loc v (_, _, maps) =
     let forward v (dest, src, range) =
-      if v >= src && v <= src + range then
+      if v >= src && v < src + range then
         Stop (dest + (v - src))
       else
         Continue v in
