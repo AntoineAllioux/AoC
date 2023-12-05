@@ -51,17 +51,53 @@ let parse =
   let* maps = sep_by end_of_line parse_map in
   return (seeds, maps)
 
+(* Completes a map with the trivial mappings *)
+let complete_map maps =
+  let f (i, l) (src, tgt, len) =
+    if src = i then
+      (src + len, (src, tgt, len) :: l)
+    else
+      (src + len, (src, tgt, len) :: (i, i, src - i) :: l) in
+  List.fold maps ~init:(0, []) ~f
+  |> snd
+  |> List.rev
+
+let rec compose_range l (src, tgt, len) =
+  let f ((src, tgt, len), l) (src2, tgt2, len2) =
+    if len = 0 then
+      Stop l
+    else if tgt >= src2 + len2 then
+      Continue ((src, tgt, len), l)
+    else
+      let new_len = min (tgt + len) (src2 + len2) - tgt in
+      Continue (((src + new_len, tgt + new_len, len - new_len), (src, tgt2 + (tgt - src2), new_len) :: l)) in
+  List.fold_until l ~init:((src, tgt, len), []) ~f ~finish:(fun ((src, tgt, len), l) -> (src, tgt, len) :: l)
+  |> List.rev
+
+let compose l1 l2 =
+  List.map l1 ~f:(compose_range l2)
+  |> List.concat
+
+let eval map x =
+  let f _ (src, tgt, len) =
+    if x < src || x > src + len then
+      Continue x
+    else
+      Stop (tgt + x - src) in
+  List.fold_until map ~init:x ~f ~finish:id
+
+let process_maps maps =
+  List.map maps ~f:(fun (_, _, maps) -> maps)
+  |> List.map ~f:(List.map ~f:(fun (tgt, src, len) -> (src, tgt, len)))
+  |> List.map ~f:(List.sort ~compare:(fun (src1, _, _) (src2, _, _) -> Int.compare src1 src2))
+  |> List.map ~f:complete_map
+  |> List.reduce ~f:compose
+  |> Option.value_exn
+
 let part1 input =
   let Ok ((seeds, maps)) = parse_string ~consume:Consume.All parse input in
-  let get_loc v (_, _, maps) =
-    let forward v (dest, src, range) =
-      if v >= src && v < src + range then
-        Stop (dest + (v - src))
-      else
-        Continue v in
-    List.fold_until maps ~init:v ~f:forward ~finish:id in 
-  let get_locs seed = List.fold maps ~init:seed ~f:get_loc in
-  List.map seeds ~f:get_locs
+  let map = process_maps maps in
+  List.map seeds ~f:(eval map)
   |> List.min_elt ~compare:Int.compare
   |> Option.value_exn
 
@@ -81,33 +117,32 @@ let parse2 =
   let* maps = sep_by end_of_line parse_map in
   return (seeds, maps)
 
+(* Returns the part of a mapping relevant to a certain range of seeds *)
+let intersection map (x, len) =
+  let f ((x, len), l) (src, tgt, len2) =
+    if len = 0 then
+      Stop l
+    else if x + len <= src || src + len2 < x then
+      Continue ((x, len), l)
+    else
+      let new_len = min (x + len) (src + len2) - x in
+      Continue (((x + new_len, len - new_len), (x, tgt + (x - src), new_len) :: l)) in
+  List.fold_until map ~init:((x, len), []) ~f ~finish:snd
+  |> List.rev
+
 let part2 input =
   let Ok ((seeds, maps)) = parse_string ~consume:Consume.All parse2 input in
-  let rev_map = List.rev maps in
-  let check_loc loc =
-    let get_seed v (_, _, maps) =
-      let backward v (dest, src, range) =
-        if v >= dest && v < dest + range then
-          Stop (src + (v - dest))
-        else
-          Continue v in
-      List.fold_until maps ~init:v ~f:backward ~finish:id in
-    let potential_seed = List.fold rev_map ~init:loc ~f:get_seed in
-    let check_seed _ (start, range) =
-      if potential_seed >= start && potential_seed < start + range then
-        Stop (Some loc)
-      else
-        Continue () in
-    List.fold_until seeds ~init:() ~f:check_seed ~finish:(const None) in
-  let rec loop i = 
-    match check_loc i with
-    | None -> loop (i + 1)
-    | Some loc -> loc      
-  in loop 0
-
+  let seeds = List.sort seeds ~compare:(fun (s1, _) (s2, _) -> Int.compare s1 s2) in
+  let map = process_maps maps in
+  List.map seeds ~f:(intersection map)
+  |> List.concat
+  |> List.map ~f:(fun (_, tgt, _) -> tgt)
+  |> List.min_elt ~compare:Int.compare
+  |> Option.value_exn
+  
 let _ =
   let input = In_channel.read_all "input" in
   begin
     printf "Part 1: %d\n" (part1 input);
-    printf "Part 2: %d\n" (part2 input)
+    printf "Part 2: %d\n" (part2 input);
   end
