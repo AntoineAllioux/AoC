@@ -2,8 +2,6 @@ open Base
 open List
 open Stdio
 
-let times l = fold l ~init:1 ~f:( * )
-
 let score (t, d) =
   let tf = Int.to_float t in
   let df = Int.to_float d in
@@ -15,7 +13,7 @@ let score (t, d) =
 let part1 =
   [(48, 261); (93, 1192); (84, 1019); (66, 1063)]
   |> map ~f:score
-  |> times
+  |> reduce_exn ~f:( * )
   
 let part2 = score (48938466, 261119210191063)
 
