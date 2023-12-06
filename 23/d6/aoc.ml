@@ -7,8 +7,9 @@ let times l = fold l ~init:1 ~f:( * )
 let score (t, d) =
   let tf = Int.to_float t in
   let df = Int.to_float d in
-  let x1 = (-. tf +. Float.sqrt (tf *. tf -. 4. *. df)) /. -. 2. in
-  let x2 = (-. tf -. Float.sqrt (tf *. tf -. 4. *. df)) /. -. 2. in
+  let delta = Float.sqrt (tf *. tf -. 4. *. df) in
+  let x1 = (-. tf +. delta) /. -. 2. in
+  let x2 = (-. tf -. delta) /. -. 2. in
   Float.to_int (Float.round_down x2 -. Float.round_up x1) + 1
 
 let part1 =
