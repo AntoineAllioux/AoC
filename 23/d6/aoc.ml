@@ -5,9 +5,14 @@ open Stdio
 let times l = fold l ~init:1 ~f:( * )
 
 let score (t, d) =
-  map (range 0 (t + 1)) ~f:(fun x -> (t - x) * x)
-  |> filter ~f:(fun x -> x > d)
-  |> length
+  let rec loop i acc =
+    if i > t then
+      acc
+    else if (t - i) * i > d then
+      loop (i + 1) (acc + 1)
+    else
+      loop (i + 1) acc
+  in loop 1 0
 
 let part1 =
   [(48, 261); (93, 1192); (84, 1019); (66, 1063)]
