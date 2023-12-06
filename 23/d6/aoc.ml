@@ -5,14 +5,11 @@ open Stdio
 let times l = fold l ~init:1 ~f:( * )
 
 let score (t, d) =
-  let rec loop i acc =
-    if i > t then
-      acc
-    else if (t - i) * i > d then
-      loop (i + 1) (acc + 1)
-    else
-      loop (i + 1) acc
-  in loop 1 0
+  let tf = Int.to_float t in
+  let df = Int.to_float d in
+  let x1 = (-. tf +. Float.sqrt (tf *. tf -. 4. *. df)) /. -. 2. in
+  let x2 = (-. tf -. Float.sqrt (tf *. tf -. 4. *. df)) /. -. 2. in
+  Float.to_int (Float.round_down x2 -. Float.round_up x1) + 1
 
 let part1 =
   [(48, 261); (93, 1192); (84, 1019); (66, 1063)]
