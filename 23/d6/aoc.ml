@@ -9,7 +9,7 @@ let score (t, d) =
   if Float.(>=) delta 0. then
     let x1 = (-. tf +. Float.sqrt delta) /. -. 2. in
     let x2 = (-. tf -. Float.sqrt delta) /. -. 2. in
-    max 0 (Float.to_int (Float.round_down x2 -. Float.round_up x1) + 1)
+    Float.to_int (Float.round_down x2 -. Float.round_up x1) + 1
   else 0
 
 let part1 =
