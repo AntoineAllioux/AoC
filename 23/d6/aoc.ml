@@ -8,7 +8,7 @@ let score (t, d) =
   let delta = Float.sqrt (tf *. tf -. 4. *. df) in
   let x1 = (-. tf +. delta) /. -. 2. in
   let x2 = (-. tf -. delta) /. -. 2. in
-  Float.to_int (Float.round_down x2 -. Float.round_up x1) + 1
+  max 0 (Float.to_int (Float.round_down x2 -. Float.round_up x1) + 1)
 
 let part1 =
   [(48, 261); (93, 1192); (84, 1019); (66, 1063)]
