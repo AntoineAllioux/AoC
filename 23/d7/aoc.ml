@@ -57,25 +57,20 @@ let check_tgts2 h tgts =
     |> Map.to_alist
     |> map ~f:snd
     |> sort ~compare:(flip Int.compare) in
-  let check_tgt js occ tgt =
+  let check_tgt (b, (js, occ)) tgt =
     if js >= tgt then
-      Some (tgt - js, occ)
+      Continue (b, (tgt - js, occ))
     else
       match occ with
-      | [] -> None
+      | [] -> Stop false
       | x :: xs ->
          if x >= tgt then
-           Some (js, xs)
+           Continue (b, (js, xs))
          else if js >= tgt - x then
-           Some (js - (tgt - x), xs)
+           Continue (b, (js - (tgt - x), xs))
          else
-           None in
-  let f (b, (js, occ)) tgt =
-    match check_tgt js occ tgt with
-    | None -> Stop false
-    | Some (js', occ') ->
-       Continue (b, (js', occ')) in
-  fold_until tgts ~init:(true, (js, occurences)) ~f ~finish:fst
+           Stop false in
+  fold_until tgts ~init:(true, (js, occurences)) ~f:check_tgt ~finish:fst
 
 let kind check_tgts h =
   if check_tgts h [5] then
