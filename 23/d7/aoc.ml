@@ -58,18 +58,19 @@ let check_tgts2 h tgts =
     |> map ~f:snd
     |> sort ~compare:(flip Int.compare) in
   let check_tgt (b, (js, occ)) tgt =
-    if js >= tgt then
-      Continue (b, (tgt - js, occ))
-    else
-      match occ with
-      | [] -> Stop false
-      | x :: xs ->
-         if x >= tgt then
-           Continue (b, (js, xs))
-         else if js >= tgt - x then
-           Continue (b, (js - (tgt - x), xs))
-         else
-           Stop false in
+    match occ with
+    | [] ->
+       if js >= tgt then
+         Continue (b, (tgt - js, occ))
+       else
+         Stop false
+    | x :: xs ->
+       if x >= tgt then
+         Continue (b, (js, xs))
+       else if js >= tgt - x then
+         Continue (b, (js - (tgt - x), xs))
+       else
+         Stop false in
   fold_until tgts ~init:(true, (js, occurences)) ~f:check_tgt ~finish:fst
 
 let kind check_tgts h =
