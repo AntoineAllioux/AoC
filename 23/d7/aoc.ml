@@ -40,7 +40,6 @@ let check_tgts1 h tgts =
     |> sort ~compare:(flip Int.compare)
     |> fold_until ~init:tgts ~f:check_tgt ~finish:is_empty
     
-  
 let check_tgts2 h tgts =
   let occurences_aux acc x =
     let update_occurence = function
