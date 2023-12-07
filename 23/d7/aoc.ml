@@ -2,6 +2,7 @@ open Base
 open Stdio
 open List
 open Container.Continue_or_stop
+open Fn
 
 let mapping1 = function
   | '1' .. '9' as c -> Int.of_string (String.of_char c)
@@ -25,28 +26,21 @@ let check_tgts1 h tgts =
       | None -> Some 1
       | Some v -> Some (v + 1) in
     Map.change acc x ~f:update_occurence in
-  let occurences =
+  let check_tgt tgts x =
+    match tgts with
+    | [] -> Stop true
+    | tgt :: tgts ->
+       if x = tgt then
+         Continue tgts
+       else
+         Stop false in
     fold h ~init:(Map.empty (module Char)) ~f:occurences_aux
     |> Map.to_alist
     |> map ~f:snd
-    |> sort ~compare:(fun m n -> - Int.compare m n) in
-  let check_tgt occ tgt =
-    let rec loop acc occ =
-      match occ with
-      | [] -> None
-      | x :: xs ->
-         if x >= tgt then
-           Some (acc @ xs)
-         else
-           loop (x :: acc) xs in
-    loop [] occ in
-  let f (b, occ) tgt =
-    match check_tgt occ tgt with
-    | None -> Stop false
-    | Some occ' ->
-       Continue (b, occ') in
-  fold_until tgts ~init:(true, occurences) ~f ~finish:fst
-
+    |> sort ~compare:(flip Int.compare)
+    |> fold_until ~init:tgts ~f:check_tgt ~finish:is_empty
+    
+  
 let check_tgts2 h tgts =
   let occurences_aux acc x =
     let update_occurence = function
@@ -60,22 +54,22 @@ let check_tgts2 h tgts =
     | Some v -> v in
   let occurences =
     Map.remove occurences_map 'J'
-    |> Map.to_alist in
+    |> Map.to_alist
+    |> map ~f:snd
+    |> sort ~compare:(flip Int.compare) in
   let check_tgt js occ tgt =
-    let rec loop (js, acc) occ =
-      match occ with
-      | [] -> None
-      | (lbl, x) :: xs ->
-         if x >= tgt then
-           Some (js, acc @ xs)
-         else if js >= tgt - x then
-           Some (js - (tgt - x), acc @ xs)
-         else
-           loop (js, (lbl, x) :: acc) xs in
     if js >= tgt then
       Some (tgt - js, occ)
     else
-      loop (js, []) occ in
+      match occ with
+      | [] -> None
+      | x :: xs ->
+         if x >= tgt then
+           Some (js, xs)
+         else if js >= tgt - x then
+           Some (js - (tgt - x), xs)
+         else
+           None in
   let f (b, (js, occ)) tgt =
     match check_tgt js occ tgt with
     | None -> Stop false
@@ -129,7 +123,7 @@ let _ =
     In_channel.read_lines "input"
     |> List.map ~f  in
   begin
-    printf "Part 1:%d\n" (part1 input);
-    printf "Part 2:%d\n" (part2 input)
+    printf "Part 1: %d\n" (part1 input);
+    printf "Part 2: %d\n" (part2 input)
   end
 
