@@ -57,11 +57,9 @@ let _ =
     map desert_raw
       ~f:(fun s ->
         let [a; _; _; _; b;_; c;_] = String.split_on_chars s ~on:[' '; '='; '('; ')'; ','] in
-        (a, b, c))
-    |> fold
-         ~init:(Map.empty (module String))
-         ~f:(fun mem (n, l, r) -> Map.add_exn mem ~key:n ~data:(l, r)) in
-  begin
+        (a, (b, c)))
+    |> Map.of_alist_exn (module String) in
+  begin 
     printf "Part 1: %d\n" (part1 desert moves);
     printf "Part 2: %d\n" (part2 desert moves)
   end
