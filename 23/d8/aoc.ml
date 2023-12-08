@@ -44,8 +44,7 @@ let part1 desert moves =
 
 let part2 desert moves =
   let check c node = Char.equal (last_exn (String.to_list node)) c in
-  Map.to_alist desert
-  |> map ~f:fst
+  Map.keys desert
   |> filter ~f:(check 'A')
   |> map ~f:(steps desert moves (check 'Z')) 
   |> reduce_exn ~f:ppcm
