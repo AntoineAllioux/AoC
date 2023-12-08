@@ -35,6 +35,7 @@ let steps desert moves check start =
     match round with
     | First steps -> steps
     | Second (node, steps) -> loop node steps in
+  
   loop start 0
 
 let part1 desert moves =
@@ -42,13 +43,12 @@ let part1 desert moves =
   steps desert moves check "AAA" 
 
 let part2 desert moves =
-  let check c node = Char.equal (List.last_exn (String.to_list node)) c in
+  let check c node = Char.equal (last_exn (String.to_list node)) c in
   Map.to_alist desert
   |> map ~f:fst
   |> filter ~f:(check 'A')
   |> map ~f:(steps desert moves (check 'Z')) 
-  |> reduce_exn ~f:ppcm 
-
+  |> reduce_exn ~f:ppcm
 
 let _ =
   let moves_raw :: _ :: desert_raw = In_channel.read_lines "input" in
@@ -61,7 +61,6 @@ let _ =
     |> fold
          ~init:(Map.empty (module String))
          ~f:(fun mem (n, l, r) -> Map.add_exn mem ~key:n ~data:(l, r)) in
-
   begin
     printf "Part 1: %d\n" (part1 desert moves);
     printf "Part 2: %d\n" (part2 desert moves)
