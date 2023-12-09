@@ -6,8 +6,8 @@ open Fn
 let sum = reduce_exn ~f:( + )
 
 let forecast l =
-  let rec round stop acc l =
-    match l with
+  let rec round stop acc =
+    function
     | d1 :: d2 :: ds ->
        round (stop && d2 - d1 = 0) (d2 - d1 :: acc) (d2 :: ds) 
     | _ -> (stop, rev acc) in
