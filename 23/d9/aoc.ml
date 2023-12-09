@@ -13,10 +13,9 @@ let forecast l =
     | _ -> (stop, rev acc) in
   let rec loop acc l =
     let (stop, diff) = round true [] l in
-    if stop then
-      map (diff :: acc) ~f:last_exn
-    else
-      loop (diff :: acc) diff in
+    if stop
+    then map (diff :: acc) ~f:last_exn
+    else loop (diff :: acc) diff in
   loop [] l @ [last_exn l]
   |> sum
 
