@@ -7,7 +7,7 @@ open Cartesian_product
 module Pos = struct
   module T = struct
     type t = int * int
-    [@@deriving compare, sexp_of, equal]
+    [@@deriving sexp_of, compare, equal]
   end
   include T
   include Comparator.Make(T)
@@ -36,8 +36,78 @@ let neighbours maze (x, y) =
 
 let all_neighbours maze (x, y) =
   [(x - 1, y); (x, y - 1); (x + 1, y); (x, y + 1)]
-  |> filter ~f:(check_boundaries maze) 
+  |> filter ~f:(check_boundaries maze)
 
+let determine_s maze =
+  let s_x, s_y =
+    Array.find_mapi_exn maze
+      ~f:(fun y row ->
+        Option.map
+          (Array.findi row ~f:(fun _ -> Char.equal 'S'))
+          ~f:(fun (x, _) -> (x, y))) in
+  
+  let s_neighbours =
+    [ ((s_x - 1, s_y), `Left); ((s_x, s_y - 1), `Above);
+      ((s_x + 1, s_y), `Right); ((s_x, s_y + 1), `Below) ]
+    |> filter ~f:(fun ((x, y), _) ->
+           x >= 0 && x < width maze && y >= 0 && y < height maze
+           && mem (neighbours maze (x, y)) (s_x, s_y) ~equal:Pos.equal)
+    |> map ~f:snd in
+  
+  let s =
+    match s_neighbours with
+    | [`Left; `Above] -> 'J'
+    | [`Left; `Right] -> '-'
+    | [`Left; `Below] -> '7'
+    | [`Above; `Right] -> 'L'
+    | [`Above; `Below] -> '|'
+    | [`Right; `Below] -> 'F' in
+
+  (s, (s_x, s_y))
+
+let bfs maze neighbours src =
+  let queue = Queue.create () in
+  let _ = Queue.enqueue queue src in
+  let rec loop visited =
+    let _ =
+      Queue.filter_inplace queue
+        ~f:(compose not (Set.mem visited)) in
+    if Queue.is_empty queue
+    then visited
+    else
+      let (x, y) = Queue.dequeue_exn queue in
+      let neighbours = neighbours maze (x, y) in
+      let _ = Queue.enqueue_all queue neighbours in
+      let visited = Set.add visited (x, y) in
+      loop visited in
+  loop (Set.empty (module Pos))
+ 
+(* First version of Part 2: we cast rays from the left border to the tiles which are not part of the loop
+ * and we count the parity of the number of crossings to determine whether they are inside the loop *)
+let part2_raycasting maze loop =
+  let check_collision (x, y): bool =
+    let rec count_crossings = function
+      | [] -> 0
+      | 'L' :: 'J' :: tiles -> count_crossings tiles
+      | 'F' :: '7' :: tiles -> count_crossings tiles
+      | 'L' :: '7' :: tiles -> 1 + count_crossings tiles
+      | 'F' :: 'J' :: tiles -> 1 + count_crossings tiles
+      | _ :: tiles  -> 1 + count_crossings tiles in
+    let crossings =
+      take (Array.to_list maze.(y)) (x + 1)
+      |> filteri ~f:(fun x _ -> Set.mem loop (x, y))
+      |> filter ~f:(compose not (Char.equal '-'))
+      |> count_crossings in
+    crossings % 2 = 1 in
+  
+  both (range 0 (width maze)) (range 0 (height maze))
+  |> filter ~f:(compose not (Set.mem loop))
+  |> map ~f:check_collision
+  |> filter ~f:(Bool.equal true)
+  |> length
+
+(* We define the in-place version of bfs for the second version of part 2
+ * which is more expensive *)
 let bfs_inplace maze neighbours src =
   let queue = Queue.create () in
   let _ = Queue.enqueue queue src in
@@ -56,33 +126,11 @@ let bfs_inplace maze neighbours src =
       loop () in
   loop ()
 
-let prepare_maze input =
+(* Second version of Part 2: we fill the exterior and count the remaining tiles *)
+let part2_filling input =
   let tmp = Array.of_list (map input ~f:Array.of_list) in
-  
-  let s_x, s_y =
-    Array.find_mapi_exn tmp
-      ~f:(fun y row ->
-        Option.map
-          (Array.findi row ~f:(fun _ -> Char.equal 'S'))
-          ~f:(fun (x, _) -> (x, y))) in
-  
-  let s_neighbours =
-    [ ((s_x - 1, s_y), `Left); ((s_x, s_y - 1), `Above);
-      ((s_x + 1, s_y), `Right); ((s_x, s_y + 1), `Below) ]
-    |> filter ~f:(fun ((x, y), _) ->
-           x >= 0 && x < width tmp && y >= 0 && y < height tmp
-           && mem (neighbours tmp (x, y)) (s_x, s_y) ~equal:Pos.equal)
-    |> map ~f:snd in
-  
-  let s =
-    match s_neighbours with
-    | [`Left; `Above] -> 'J'
-    | [`Left; `Right] -> '-'
-    | [`Left; `Below] -> '7'
-    | [`Above; `Right] -> 'L'
-    | [`Above; `Below] -> '|'
-    | [`Right; `Below] -> 'F' in
- 
+  let (s, (s_x, s_y)) = determine_s tmp in
+
   let f_h c =
     let c = if Char.equal c 'S' then s else c in
     if Char.equal c '-'
@@ -107,42 +155,38 @@ let prepare_maze input =
     |> concat
     |> drop_last_exn in
   
-  let width = 2 * width tmp + 1 in
+  let maze_width = 2 * width tmp + 1 in
 
   let maze =
     Array.of_list
       (map
-         (init width ~f:(const '#') :: maze_interior @ [init width ~f:(const '#')])
+         (init maze_width ~f:(const '#') :: maze_interior @ [init maze_width ~f:(const '#')])
          ~f:Array.of_list) in
   
-  (maze, (s_x, s_y))
+  let check_visited (x, y) =
+    let (x, y) = 2 * x + 1, 2 * y + 1 in
+    Char.equal maze.(y).(x) 'X' in
+
+  let _ = bfs_inplace maze neighbours (s_x, s_y) in
+  
+  let _ = bfs_inplace maze all_neighbours (0, 0) in
+  both (range 0 (width tmp)) (range 0 (height tmp))
+  |> filter ~f:(compose not check_visited)
+  |> length
 
 let _ =
   let input =
     In_channel.read_lines "input"
     |> map ~f:String.to_list in
   
-  let (maze, (s_x, s_y)) = prepare_maze input in
+  let maze = Array.of_list (map input ~f:Array.of_list) in
+  let (s, (s_x, s_y)) = determine_s maze in
+  let _ = maze.(s_y).(s_x) <- s in
+  let loop = bfs maze neighbours (s_x, s_y) in 
+  let part1 = Set.length loop / 2 in
 
-  let check_visited (x, y) =
-    let (x, y) = 2 * x + 1, 2 * y + 1 in
-    Char.equal maze.(y).(x) 'X' in
-  
-  let part1 =
-    let _ = bfs_inplace maze neighbours (s_x, s_y) in
-    let loop_length = 
-      both (range 0 ((width maze - 1) / 2)) (range 0 ((height maze - 1) / 2))
-      |> filter ~f:check_visited
-      |> length in
-    loop_length / 2 in
-  
-  let part2 =
-    let _ = bfs_inplace maze all_neighbours (0, 0) in
-    both (range 0 ((width maze - 1) / 2)) (range 0 ((height maze - 1) / 2))
-    |> filter ~f:(compose not check_visited)
-    |> length in
-  
   begin
     printf "Part 1: %d\n" part1;
-    printf "Part 2: %d\n" part2;
+    printf "Part 2 (filling): %d\n" (part2_filling input);
+    printf "Part 2 (raycasting): %d\n" (part2_raycasting maze loop);
   end
