@@ -85,7 +85,7 @@ let bfs maze neighbours src =
 (* First version of Part 2: we cast rays from the left border to the tiles which are not part of the loop
  * and we count the parity of the number of crossings to determine whether they are inside the loop *)
 let part2_raycasting maze loop =
-  let check_collision (x, y): bool =
+  let is_inside (x, y) =
     let rec count_crossings = function
       | [] -> 0
       | 'L' :: 'J' :: tiles | 'F' :: '7' :: tiles -> count_crossings tiles
@@ -100,11 +100,11 @@ let part2_raycasting maze loop =
   
   both (range 0 (width maze)) (range 0 (height maze))
   |> filter ~f:(compose not (Set.mem loop))
-  |> map ~f:check_collision
+  |> map ~f:is_inside
   |> filter ~f:(Bool.equal true)
   |> length
 
-(* We define the in-place version of bfs for the second version of part 2
+(* We define an in-place version of bfs for the second version of part 2
  * which is more expensive *)
 let bfs_inplace maze neighbours src =
   let queue = Queue.create () in
@@ -128,7 +128,6 @@ let bfs_inplace maze neighbours src =
 let part2_filling input =
   let tmp = Array.of_list (map input ~f:Array.of_list) in
   let (s, (s_x, s_y)) = determine_s tmp in
-
   let f_h c =
     let c = if Char.equal c 'S' then s else c in
     if Char.equal c '-'
@@ -154,7 +153,6 @@ let part2_filling input =
     |> drop_last_exn in
   
   let maze_width = 2 * width tmp + 1 in
-
   let maze =
     Array.of_list
       (map
@@ -164,9 +162,8 @@ let part2_filling input =
   let check_visited (x, y) =
     let (x, y) = 2 * x + 1, 2 * y + 1 in
     Char.equal maze.(y).(x) 'X' in
-
-  let _ = bfs_inplace maze neighbours (s_x, s_y) in
   
+  let _ = bfs_inplace maze neighbours (s_x, s_y) in
   let _ = bfs_inplace maze all_neighbours (0, 0) in
   both (range 0 (width tmp)) (range 0 (height tmp))
   |> filter ~f:(compose not check_visited)
