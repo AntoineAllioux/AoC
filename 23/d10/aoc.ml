@@ -88,10 +88,8 @@ let part2_raycasting maze loop =
   let check_collision (x, y): bool =
     let rec count_crossings = function
       | [] -> 0
-      | 'L' :: 'J' :: tiles -> count_crossings tiles
-      | 'F' :: '7' :: tiles -> count_crossings tiles
-      | 'L' :: '7' :: tiles -> 1 + count_crossings tiles
-      | 'F' :: 'J' :: tiles -> 1 + count_crossings tiles
+      | 'L' :: 'J' :: tiles | 'F' :: '7' :: tiles -> count_crossings tiles
+      | 'L' :: '7' :: tiles | 'F' :: 'J' :: tiles -> 1 + count_crossings tiles
       | _ :: tiles  -> 1 + count_crossings tiles in
     let crossings =
       take (Array.to_list maze.(y)) (x + 1)
