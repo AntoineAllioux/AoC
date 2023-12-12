@@ -25,6 +25,7 @@ let arrangements springs damaged_springs =
     end in
   
   let mem = ref (Map.empty (module Mem)) in
+  
   let rec loop springs damaged_springs active =
     match Map.find (! mem) (springs, damaged_springs, active) with
     | Some v -> v
