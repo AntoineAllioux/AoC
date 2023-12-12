@@ -1,0 +1,8 @@
+(executable
+  (name aoc)
+  (libraries base stdio)
+  (preprocess (pps ppx_jane)))
+
+(env
+  (dev
+    (flags (:standard -warn-error -A))))
