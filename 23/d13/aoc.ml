@@ -38,28 +38,31 @@ let repair_and_compute_reflexions pattern =
   let height = height pattern in
   let width = width pattern in
   let (orig_refl_x, orig_refl_y) = compute_reflexions pattern in
-  
+
   let switch =
     function
     | '.' -> '#'
     | '#' -> '.' in
+  
+  let check_repair acc (x, y) =
+    pattern.(y).(x) <- switch pattern.(y).(x);
+    let (refl_x, refl_y) = compute_reflexions pattern in
+    pattern.(y).(x) <- switch pattern.(y).(x);
+    let refl_x =
+      filter refl_x
+        ~f:(compose not (mem orig_refl_x ~equal:Int.equal)) in
+    let refl_y =
+      filter refl_y
+        ~f:(compose not (mem orig_refl_y ~equal:Int.equal)) in
+    
+    if not (is_empty refl_x) || not (is_empty refl_y)
+    then Stop (refl_x, refl_y)
+    else Continue acc in 
 
   both (range 0 width) (range 0 height)
   |> fold_until
        ~init:(orig_refl_x, orig_refl_y)
-       ~f:(fun acc (x, y) ->
-         pattern.(y).(x) <- switch pattern.(y).(x);
-         let (refl_x, refl_y) = compute_reflexions pattern in
-         pattern.(y).(x) <- switch pattern.(y).(x);
-         let refl_x =
-           filter refl_x
-             ~f:(compose not (mem orig_refl_x ~equal:Int.equal)) in
-         let refl_y =
-           filter refl_y
-             ~f:(compose not (mem orig_refl_y ~equal:Int.equal)) in
-         if not (is_empty refl_x) || not (is_empty refl_y)
-         then Stop (refl_x, refl_y)
-         else Continue acc)
+       ~f:check_repair
        ~finish:id
   
 let _ =
