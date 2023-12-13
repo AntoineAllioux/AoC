@@ -7,7 +7,7 @@ type spring =
   | Operational
   | Damaged
   | Unknown
-[@@deriving sexp_of, compare, equal]
+[@@deriving sexp_of, compare, hash]
 
 let sum = reduce_exn ~f:( + )
 
@@ -18,16 +18,16 @@ let arrangements springs damaged_springs =
   let module Mem = struct
       module T = struct
         type t = spring list * int list * bool
-        [@@deriving sexp_of, compare, equal]
+        [@@deriving sexp_of, compare, hash]
       end
       include T
       include Comparator.Make(T)
     end in
   
-  let mem = ref (Map.empty (module Mem)) in
+  let mem = Hashtbl.create (module Mem) in
   
   let rec loop springs damaged_springs active =
-    match Map.find (! mem) (springs, damaged_springs, active) with
+    match Hashtbl.find mem (springs, damaged_springs, active) with
     | Some v -> v
     | _ ->
        let res = 
@@ -60,9 +60,9 @@ let arrangements springs damaged_springs =
             then loop s ns false
             else loop (Unknown :: s) ns false in
        
-       mem := Map.add_exn (! mem)
-                ~key:(springs, damaged_springs, active)
-                ~data:res;
+       Hashtbl.add_exn mem
+         ~key:(springs, damaged_springs, active)
+         ~data:res;
        res
 
   in loop springs damaged_springs false
