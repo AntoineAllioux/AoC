@@ -10,34 +10,8 @@ type direction =
   | U of int
   | D of int
 
-let process_directions data =
-  
-  let process_triplet =
-    function
-    | D _, (L x, U _) -> L (x + 1)  
-    | U _, (R x, D _) -> R (x + 1)
-    | L _, (U x, R _) -> U (x + 1)
-    | R _, (D x, L _) -> D (x + 1)
-
-    | D _, (R x, D _) -> R x  
-    | U _, (L x, U _) -> L x
-    | D _, (L x, D _) -> L x
-    | U _, (R x, U _) -> R x
-    | L _, (D x, L _) -> D x  
-    | R _, (U x, R _) -> U x
-    | R _, (D x, R _) -> D x
-    | L _, (U x, L _) -> U x
-
-    | D _, (R x, U _) -> R (x - 1)   
-    | L _, (D x, R _) -> D (x - 1)
-    | U _, (L x, D _) -> L (x - 1)
-    | R _, (U x, L _) -> U (x - 1) in
-  
-  let l1 = last_exn data :: drop_last_exn data in
-  let l2 = tl_exn data @ [hd_exn data] in
-  map (zip_exn l1 (zip_exn data l2)) ~f:process_triplet
-
 let lagoon_capacity directions =
+  
   
   let trench =
     let compute_trench (((x, y) :: _) as dir) = function
@@ -83,6 +57,33 @@ let lagoon_capacity directions =
   both xs_intervals ys_intervals
   |> fold ~init:0 ~f:compute_area
 
+let process_directions data =
+  
+  let process_triplet =
+    function
+    | D _, (L x, U _) -> L (x + 1)  
+    | U _, (R x, D _) -> R (x + 1)
+    | L _, (U x, R _) -> U (x + 1)
+    | R _, (D x, L _) -> D (x + 1)
+
+    | D _, (R x, D _) -> R x  
+    | U _, (L x, U _) -> L x
+    | D _, (L x, D _) -> L x
+    | U _, (R x, U _) -> R x
+    | L _, (D x, L _) -> D x  
+    | R _, (U x, R _) -> U x
+    | R _, (D x, R _) -> D x
+    | L _, (U x, L _) -> U x
+
+    | D _, (R x, U _) -> R (x - 1)   
+    | L _, (D x, R _) -> D (x - 1)
+    | U _, (L x, D _) -> L (x - 1)
+    | R _, (U x, L _) -> U (x - 1) in
+  
+  let l1 = last_exn data :: drop_last_exn data in
+  let l2 = tl_exn data @ [hd_exn data] in
+  map (zip_exn l1 (zip_exn data l2)) ~f:process_triplet
+
 let part1 input =
   
   let directions =
@@ -110,7 +111,7 @@ let part2 input =
         | "2" -> L n
         | "3" -> U n)
     |> process_directions in
-
+  
   lagoon_capacity directions
 
 let _ =
