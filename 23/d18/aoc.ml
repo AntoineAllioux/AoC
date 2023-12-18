@@ -13,7 +13,7 @@ type direction =
 let lagoon_capacity directions =
   
   let trench =
-    let compute_trench (((x, y) :: _) as dir) = function
+    let compute_trench ((x, y) :: _ as dir) = function
       | U n -> (x, y - n) :: dir
       | D n -> (x, y + n) :: dir
       | R n -> (x + n, y) :: dir
