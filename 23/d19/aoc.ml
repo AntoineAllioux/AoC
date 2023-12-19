@@ -6,8 +6,6 @@ open Continue_or_stop
 open Model
 open Parser
 
-type cond_ext = Cond of cond | Neg of cond
-
 let sum l = reduce_exn l ~f:( + )
 
 let part1 workflows ratings =
@@ -40,55 +38,57 @@ let part1 workflows ratings =
   |> sum
 
 let part2 workflows =
-  let combinations conds =
-    let ranges_init =
-      Map.of_alist_exn
-        (module Cat)
-        [ (X, (1, 4000)); (M, (1, 4000)); (A, (1, 4000)); (S, (1, 4000)) ]
-    in
-
-    let ranges =
-      fold conds ~init:ranges_init ~f:(fun ranges -> function
-        | Cond (Lt (cat, x)) ->
-            Map.update ranges cat ~f:(fun (Some (cat_min, cat_max)) ->
-                (cat_min, min (x - 1) cat_max))
-        | Cond (Gt (cat, x)) ->
-            Map.update ranges cat ~f:(fun (Some (cat_min, cat_max)) ->
-                (max cat_min (x + 1), cat_max))
-        | Neg (Lt (cat, x)) ->
-            Map.update ranges cat ~f:(fun (Some (cat_min, cat_max)) ->
-                (max cat_min x, cat_max))
-        | Neg (Gt (cat, x)) ->
-            Map.update ranges cat ~f:(fun (Some (cat_min, cat_max)) ->
-                (cat_min, min x cat_max)))
-    in
-
+  let combinations ranges =
     Map.fold ranges ~init:1 ~f:(fun ~key:_ ~data:(min, max) acc ->
         (max - min + 1) * acc)
   in
 
-  let solutions =
-    let rec loop workflow_id ctx =
-      let (Workflow (conds, final_decision)) =
-        Map.find_exn workflows workflow_id
-      in
-      let new_conds, sols =
-        fold conds ~init:(ctx, []) ~f:(fun (ctx, sols) (cond, decision) ->
-            match decision with
-            | Acc -> (Neg cond :: ctx, (Cond cond :: ctx) :: sols)
-            | Rej -> (Neg cond :: ctx, sols)
-            | Goto w -> (Neg cond :: ctx, loop w (Cond cond :: ctx) @ sols))
-      in
-
-      match final_decision with
-      | Acc -> new_conds :: sols
-      | Rej -> sols
-      | Goto w -> loop w new_conds @ sols
-    in
-    loop "in" []
+  let ranges_init =
+    Map.of_alist_exn
+      (module Cat)
+      [ (X, (1, 4000)); (M, (1, 4000)); (A, (1, 4000)); (S, (1, 4000)) ]
   in
 
-  solutions |> map ~f:combinations |> sum
+  let update_ranges ranges cond neg =
+    match cond with
+    | Lt (cat, x) ->
+        if neg then
+          Map.update ranges cat ~f:(fun (Some (cat_min, cat_max)) ->
+              (max cat_min x, cat_max))
+        else
+          Map.update ranges cat ~f:(fun (Some (cat_min, cat_max)) ->
+              (cat_min, min (x - 1) cat_max))
+    | Gt (cat, x) ->
+        if neg then
+          Map.update ranges cat ~f:(fun (Some (cat_min, cat_max)) ->
+              (cat_min, min x cat_max))
+        else
+          Map.update ranges cat ~f:(fun (Some (cat_min, cat_max)) ->
+              (max cat_min (x + 1), cat_max))
+  in
+
+  let rec loop workflow_id ranges =
+    let (Workflow (conds, final_decision)) =
+      Map.find_exn workflows workflow_id
+    in
+    let new_ranges, acc =
+      fold conds ~init:(ranges, 0) ~f:(fun (ranges, acc) (cond, decision) ->
+          match decision with
+          | Acc ->
+              (update_ranges ranges cond true,
+               acc + combinations (update_ranges ranges cond false))
+          | Rej -> (update_ranges ranges cond true, acc)
+          | Goto w ->
+              (update_ranges ranges cond true,
+               loop w (update_ranges ranges cond false) + acc))
+    in
+
+    match final_decision with
+    | Acc -> combinations new_ranges + acc
+    | Rej -> acc
+    | Goto w -> loop w new_ranges + acc
+  in
+  loop "in" ranges_init
 
 let _ =
   let input = In_channel.read_all "input" in
