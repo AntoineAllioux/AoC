@@ -1,5 +1,3 @@
-open Functor
-
 module type S = sig
   include Functor.S
 

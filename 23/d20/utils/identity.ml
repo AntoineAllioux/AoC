@@ -1,5 +1,3 @@
-open Monad
-
 module S : Monad.S with type 'a t = 'a = struct
   type 'a t = 'a
 

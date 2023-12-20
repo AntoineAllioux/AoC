@@ -1,5 +1,4 @@
 open Base
-open Fn
 open Angstrom
 open Let_syntax
 open Model
