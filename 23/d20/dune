@@ -1,0 +1,12 @@
+(executable
+ (name aoc)
+ (libraries base stdio angstrom ocamlgraph)
+ (preprocess
+  (pps ppx_jane)))
+
+(env
+ (dev
+  (flags
+   (:standard -warn-error -A))))
+
+(include_subdirs unqualified)
