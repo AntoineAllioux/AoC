@@ -14,8 +14,6 @@ end)
 
 open Monad.Let_syntax (State)
 
-type pulse = Pulse of (string option * string * pulse_type)
-
 let preds id graph =
   Map.fold graph ~init:[] ~f:(fun ~key:id2 ~data:(Nd (_, succ)) acc ->
       match find succ ~f:(fun (succ_id, _) -> String.equal id succ_id) with
@@ -79,13 +77,13 @@ let process_pulse (Pulse (_, tgt, pulse_type) as pulse) =
 
 let fold_pulses f init =
   let pulses = Queue.create () in
-  let _ = Queue.enqueue pulses (Pulse (None, "broadcaster", Low)) in
+  Queue.enqueue pulses (Pulse (None, "broadcaster", Low));
   let rec loop init =
     if Queue.is_empty pulses then State.pure init
     else
       let pulse = Queue.dequeue_exn pulses in
       let* new_pulses = process_pulse pulse in
-      let _ = Queue.enqueue_all pulses new_pulses in
+      Queue.enqueue_all pulses new_pulses;
       loop (f pulse init)
   in
   loop init
@@ -98,8 +96,8 @@ let part1 graph =
   let rec loop low high n =
     if n = 0 then State.pure (low * high)
     else
-      let* new_low, new_high = fold_pulses process_pulse (0, 0) in
-      loop (new_low + low) (new_high + high) (n - 1)
+      let* new_low, new_high = fold_pulses process_pulse (low, high) in
+      loop new_low new_high (n - 1)
   in
 
   State.eval_state (loop 0 0 1000) graph
