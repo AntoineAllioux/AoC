@@ -33,7 +33,7 @@ let update_src (Pulse (src, tgt, pulse_type)) =
               Nd (mod_type, new_succ)))
   | None -> State.pure ()
 
-let process_pulse (Pulse (_, tgt, pulse_type) as pulse) =
+let generate_pulses (Pulse (_, tgt, pulse_type) as pulse) =
   let* _ = update_src pulse in
   let* graph = State.get in
   match Map.find graph tgt with
@@ -82,7 +82,7 @@ let fold_pulses f init =
     if Queue.is_empty pulses then State.pure init
     else
       let pulse = Queue.dequeue_exn pulses in
-      let* new_pulses = process_pulse pulse in
+      let* new_pulses = generate_pulses pulse in
       Queue.enqueue_all pulses new_pulses;
       loop (f pulse init)
   in
