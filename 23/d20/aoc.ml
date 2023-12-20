@@ -77,7 +77,7 @@ let process_pulse (Pulse (_, tgt, pulse_type) as pulse) =
           State.pure pulses
       | Out -> State.pure [])
 
-let eval f init =
+let fold_pulses f init =
   let pulses = Queue.create () in
   let _ = Queue.enqueue pulses (Pulse (None, "broadcaster", Low)) in
   let rec loop init =
@@ -98,7 +98,7 @@ let part1 graph =
   let rec loop low high n =
     if n = 0 then State.pure (low * high)
     else
-      let* new_low, new_high = eval process_pulse (0, 0) in
+      let* new_low, new_high = fold_pulses process_pulse (0, 0) in
       loop (new_low + low) (new_high + high) (n - 1)
   in
 
@@ -126,7 +126,7 @@ let part2 graph =
     if Map.length counts = 4 then
       State.pure (reduce_exn (Map.data counts) ~f:lcm)
     else
-      let* counts = eval (process_pulse n) counts in
+      let* counts = fold_pulses (process_pulse n) counts in
       loop counts (n + 1)
   in
 
