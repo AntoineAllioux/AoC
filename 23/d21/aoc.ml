@@ -43,18 +43,19 @@ let part1 graph src n =
 let part2 graph src n =
   let n = (n - 65) / 131 in
 
-  let los0 = part1 graph src 64 in
-  let los1 = part1 graph src 65 in
-  let rest0 = part1 graph src 130 - los0 in
-  let rest1 = part1 graph src 131 - los1 in
+  let diamond0 = part1 graph src 64 in
+  let diamond1 = part1 graph src 65 in
+  let corners0 = part1 graph src 130 - diamond0 in
+  let corners1 = part1 graph src 131 - diamond1 in
 
   let rec loop p n acc =
-    let los, rest0, rest1 =
-      if p then (los1, rest1, rest0) else (los0, rest0, rest1)
+    let diamond, corners0, corners1 =
+      if p then (diamond1, corners1, corners0)
+      else (diamond0, corners0, corners1)
     in
-    if n = 0 then los + acc
+    if n = 0 then diamond + acc
     else
-      let acc = 2 * n * (2 * los + rest0 + rest1) + acc in
+      let acc = (2 * n * ((2 * diamond) + corners0 + corners1)) + acc in
       loop (not p) (n - 1) acc
   in
   loop true n 0
