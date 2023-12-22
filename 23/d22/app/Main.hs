@@ -1,12 +1,12 @@
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Main where
 
 import Data.Array (elems, indices, (!))
 import Data.Graph
-import Data.List (nub, sortBy)
+import Data.List (sortBy)
 import Data.List.Split
-
 newtype Pos = Pos (Int, Int, Int) deriving (Show)
 
 newtype Brick = Brick (Pos, Pos) deriving (Show)
@@ -77,9 +77,9 @@ part2 graph = foldr1 (+) (map fallCount (indices graph))
     fallCount v = length (fallCountAux (graph ! v) [v]) - 1
 
     fallCountAux :: [Vertex] -> [Vertex] -> [Vertex]
-    fallCountAux [] acc = nub acc
+    fallCountAux [] acc = acc
     fallCountAux (v : vs) acc =
-      let succ = graph ! v
+      let succ = filter (\x -> notElem x vs) (graph ! v)
           pred = preds graph v
           (succ', acc') = if all (\x -> elem x acc) pred then (vs ++ succ, v : acc) else (vs, acc)
        in fallCountAux succ' acc'
