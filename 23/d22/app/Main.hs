@@ -1,5 +1,4 @@
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ViewPatterns #-}
 
 module Main where
 
@@ -7,11 +6,12 @@ import Data.Array (elems, indices, (!))
 import Data.Graph
 import Data.List (sortBy)
 import Data.List.Split
-newtype Pos = Pos (Int, Int, Int) deriving (Show)
 
-newtype Brick = Brick (Pos, Pos) deriving (Show)
+newtype Pos = Pos (Int, Int, Int)
 
-newtype Interval = Int (Int, Int) deriving (Show)
+newtype Brick = Brick (Pos, Pos)
+
+newtype Interval = Int (Int, Int)
 
 getZ :: Brick -> Int
 getZ (Brick (Pos (_, _, z), _)) = z
@@ -31,18 +31,13 @@ intersect :: Interval -> Interval -> Bool
 intersect (Int (x11, x12)) (Int (x21, x22)) =
   x12 >= x21 && x11 <= x22
 
-collision :: Brick -> Brick -> Bool
-collision
+areColliding :: Brick -> Brick -> Bool
+areColliding
   (Brick (Pos (x11, y11, z11), Pos (x12, y12, z12)))
   (Brick (Pos (x21, y21, z21), Pos (x22, y22, z22))) =
     intersect (Int (x11, x12)) (Int (x21, x22))
       && intersect (Int (y11, y12)) (Int (y21, y22))
       && intersect (Int (z11, z12)) (Int (z21, z22))
-
-zCollision :: Brick -> Brick -> Int
-zCollision b1 b2 =
-  let b2Z = getZ b2
-   in if collision b2 (setZ b1 b2Z) then b2Z + getHeight b2 else 1
 
 preds :: Graph -> Vertex -> [Vertex]
 preds g v = filter (\v2 -> elem v (g ! v2)) (indices g)
@@ -57,14 +52,19 @@ bricksGraph bricks =
     computePos :: [Brick] -> [Brick] -> [Brick]
     computePos [] stillB = stillB
     computePos (b : bs) still =
-      let z = foldl (\acc stillB -> max acc (zCollision b stillB)) 1 still
+      let z = foldl (\acc stillB -> max acc (minZ b stillB)) 1 still
        in computePos bs (setZ b z : still)
+
+    minZ :: Brick -> Brick -> Int
+    minZ b1 b2 =
+      let b2Z = getZ b2
+       in if areColliding b2 (setZ b1 b2Z) then b2Z + getHeight b2 else 1
 
     edgesB :: [(Int, Brick)] -> [(Brick, Int, [Int])]
     edgesB [] = []
     edgesB ((i, b) : bs) =
-      let succ = foldl (\acc (j, b2) -> if collision b (moveZ b2 (-1)) then j : acc else acc) [] bs
-       in (b, i, succ) : edgesB bs
+        let succ = foldl (\acc (j, b2) -> if areColliding b (moveZ b2 (-1)) then j : acc else acc) [] bs
+        in (b, i, succ) : edgesB bs
 
 part1 :: Graph -> Int
 part1 graph =
