@@ -74,17 +74,15 @@ part2 :: Graph -> Int
 part2 graph = foldr1 (+) (map fallCount (indices graph))
   where
     fallCount :: Vertex -> Int
-    fallCount v =
-      let succ = graph ! v
-       in length (fallCountAux succ [v]) - 1
+    fallCount v = length (fallCountAux (graph ! v) [v]) - 1
 
     fallCountAux :: [Vertex] -> [Vertex] -> [Vertex]
     fallCountAux [] acc = nub acc
     fallCountAux (v : vs) acc =
       let succ = graph ! v
           pred = preds graph v
-          (newSucc, newAcc) = if all (\x -> elem x acc) pred then (vs ++ succ, v : acc) else (vs, acc)
-       in fallCountAux newSucc newAcc
+          (succ', acc') = if all (\x -> elem x acc) pred then (vs ++ succ, v : acc) else (vs, acc)
+       in fallCountAux succ' acc'
 
 parse :: String -> Brick
 parse s =
