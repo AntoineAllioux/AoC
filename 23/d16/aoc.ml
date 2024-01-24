@@ -12,11 +12,11 @@ let filter_valid grid pos =
   filter pos ~f:(fun ((x, y), _) -> check_boundaries grid (x, y))
 
 type direction = Right | Left | Above | Below
-[@@deriving sexp_of, compare, equal]
+[@@deriving sexp_of, compare, equal, hash]
 
 module Pos = struct
   module T = struct
-    type t = int * int [@@deriving sexp_of, compare, equal]
+    type t = int * int [@@deriving sexp_of, compare, equal, hash]
   end
 
   include T
@@ -25,7 +25,7 @@ end
 
 module Mem = struct
   module T = struct
-    type t = Pos.t * direction [@@deriving sexp_of, compare, equal]
+    type t = Pos.t * direction [@@deriving sexp_of, compare, hash]
   end
 
   include T
@@ -67,19 +67,20 @@ let next_tiles grid (x, y) direction =
   filter_valid grid positions
 
 let energized_tiles grid start direction =
-  let rec loop mem stack acc =
+  let mem = Hashtbl.create (module Mem) in
+  let rec loop stack acc =
     match stack with
     | [] -> acc
     | ((x, y), direction) :: stack -> (
-        match Map.find mem ((x, y), direction) with
-        | Some _ -> loop mem stack acc
+        match Hashtbl.find mem ((x, y), direction) with
+        | Some _ -> loop stack acc
         | None ->
             let tiles = next_tiles grid (x, y) direction in
             let acc = Set.add acc (x, y) in
-            let mem' = Map.add_exn mem ~key:((x, y), direction) ~data:true in
-            loop mem' (tiles @ stack) acc)
+            let _ = Hashtbl.add mem ((x, y), direction) () in
+            loop (tiles @ stack) acc)
   in
-  Set.length (loop (Map.empty (module Mem)) [ (start, direction) ] (Set.empty (module Pos)))
+  Set.length (loop [ (start, direction) ] (Set.empty (module Pos)))
 
 let part2 grid =
   let height = height grid in
