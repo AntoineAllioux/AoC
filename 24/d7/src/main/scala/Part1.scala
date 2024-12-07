@@ -1,9 +1,6 @@
 package aoc.part1
 
 import scala.io.Source
-import scala.collection.StringOps
-import scala.collection.mutable.HashSet
-import scala.collection.SeqView.Reverse
 
 def isSatisfiable(target: Long, xs: List[Long]): Boolean =
   xs match
